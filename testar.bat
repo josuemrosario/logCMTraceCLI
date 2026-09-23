@@ -2,7 +2,7 @@
 :: Configura a página de código do console para UTF-8 para evitar problemas com acentos no CMD
 chcp 65001 >nul
 
-:: Nome do executável compiado (ajuste se mudou o nome do arquivo)
+:: Nome do executável compilado (ajuste se mudou o nome do arquivo)
 set "EXE_NAME=logCMTraceCLI.exe"
 :: Nome do arquivo de log que será criado para o teste
 set "LOG_FILE=teste_completo.log"
@@ -25,8 +25,8 @@ if not exist "%EXE_NAME%" (
 :: Apaga o log de testes anterior, se existir, para começar limpo
 if exist "%LOG_FILE%" del "%LOG_FILE%"
 
-echo [+] 1. Testando argumentos mínimos (Mensagem e Caminho apenas)...
-:: Deve assumir Tipo="1" (Branco) e Componente="ScriptBAT" automaticamente
+echo [+] 1. Testando argumentos mínimos com arquivo (Mensagem e Caminho)...
+:: Deve assumir Tipo="1" (Branco) e Componente="indefinido" automaticamente
 %EXE_NAME% "Esta é uma mensagem simples usando os valores padrões do programa." "%LOG_FILE%"
 timeout /t 1 >nul
 
@@ -46,8 +46,21 @@ echo [+] 4. Testando Tipo 3 - Erro Crítico / Error (Fica Vermelho no CMTrace)..
 timeout /t 1 >nul
 
 echo.
+echo -------------------------------------------------------
+echo [+] 5. Testando saída DIRETA NA CONSOLE (Sem arquivo de log)...
+echo -------------------------------------------------------
+echo Abaixo devem aparecer as linhas formatadas impressas no terminal:
+echo.
+
+:: Teste 5.1: Apenas mensagem (comportamento padrão de console)
+%EXE_NAME% "Mensagem enviada direto para a console."
+
+:: Teste 5.2: Mensagem com tipo e componente indo para a console
+%EXE_NAME% "Aviso enviado direto para a console." 2 "ConsoleLog"
+
+echo.
 echo =======================================================
-echo               TESTES CONCLUÍDOS COM SUCESSO!
+echo                 TESTES CONCLUÍDOS COM SUCESSO!
 echo =======================================================
 echo O arquivo "%LOG_FILE%" foi gerado na pasta atual.
 echo.

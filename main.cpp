@@ -1,26 +1,21 @@
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <windows.h>
 #include <sys/timeb.h>
-#include <ctime>       
-#include <cstdio>      
+#include <ctime>        
+#include <cstdio>       
 
-// Função compatível com MinGW GCC para obter a data e hora no formato CMTrace
 void obterDataHora(std::string &dataStr, std::string &horaStr) {
     struct _timeb timebuffer;
-    _ftime(&timebuffer); // Versão ANSI estável no MinGW
+    _ftime(&timebuffer);
 
     time_t tempoSegundos = timebuffer.time;
-    struct tm* infoTempo = localtime(&tempoSegundos); // Versão padrão ANSI (não trava no GCC)
+    struct tm* infoTempo = localtime(&tempoSegundos);
 
     char bufferData[32];
     char bufferHora[32];
 
-    // Formato da Data: MM-dd-yyyy
     strftime(bufferData, sizeof(bufferData), "%m-%d-%Y", infoTempo);
-    
-    // Formato da Hora com Milissegundos e Fuso Horário Falso (+000) usando sprintf padrão
     sprintf(bufferHora, "%02d:%02d:%02d.%03d+000", 
             infoTempo->tm_hour, infoTempo->tm_min, infoTempo->tm_sec, timebuffer.millitm);
 
@@ -29,39 +24,84 @@ void obterDataHora(std::string &dataStr, std::string &horaStr) {
 }
 
 int main(int argc, char* argv[]) {
-    // Validação dos argumentos mínimos obrigatórios
-    if (argc < 3) {
-        std::cout << "Uso: logger_cmtrace.exe \"Mensagem\" \"Caminho\\Do\\Arquivo.log\" [Tipo: 1, 2, 3] [Componente]" << std::endl;
+    if (argc < 2) {
+        std::cout << "Uso: logCMTraceCLI.exe \"Mensagem\" [\"Caminho\\Do\\Arquivo.log\"] [Tipo] [Componente]" << std::endl;
         return 1;
     }
 
     std::string mensagem   = argv[1];
-    std::string caminhoLog = argv[2];
+    // Se o argumento 2 não for passado, definimos a string como vazia para indicar saída na console
+    std::string caminhoLog = (argc > 2) ? argv[2] : "";
     std::string tipo       = (argc > 3) ? argv[3] : "1"; 
     std::string componente = (argc > 4) ? argv[4] : "indefinido";
 
     std::string dataStr, horaStr;
     obterDataHora(dataStr, horaStr);
 
-    // Monta a estrutura exata exigida pelo CMTrace
     std::string linhaLog = "<![LOG[" + mensagem + "]LOG]!><time=\"" + horaStr + 
                            "\" date=\"" + dataStr + 
                            "\" component=\"" + componente + 
                            "\" context=\"\" type=\"" + tipo + 
-                           "\" thread=\"1\" file=\"bat\">";
+                           "\" thread=\"1\" file=\"bat\">\r\n";
 
-    // Abre o arquivo forçando o uso de .c_str() para corrigir o erro da linha 57
-    std::ofstream arquivo;
-    arquivo.open(caminhoLog.c_str(), std::ios_base::app);
+    // Se nenhum arquivo foi informado, imprime direto na console e encerra com sucesso
+    if (caminhoLog.empty()) {
+        std::cout << linhaLog;
+        return 0;
+    }
+
+    // 1. CRIAÇÃO DE UM MUTEX GLOBAL NO SISTEMA OPERACIONAL
+    HANDLE hMutex = CreateMutexA(NULL, FALSE, "Global\\LogCMTraceCLI_MutexUnico");
     
-    if (arquivo.is_open()) {
-        arquivo << linhaLog << std::endl;
-        arquivo.close();
-    } else {
-        std::cerr << "Erro: Nao foi possivel abrir ou criar o arquivo de log: " << caminhoLog << std::endl;
+    if (hMutex != NULL) {
+        DWORD waitResult = WaitForSingleObject(hMutex, 5000);
+        
+        if (waitResult != WAIT_OBJECT_0 && waitResult != WAIT_ABANDONED) {
+            std::cerr << "Erro: Tempo limite esgotado aguardando o semaforo de log." << std::endl;
+            CloseHandle(hMutex);
+            return 1;
+        }
+    }
+
+    // --- SEÇÃO CRÍTICA ---
+    bool sucesso = false;
+    
+    HANDLE hFile = CreateFileA(
+        caminhoLog.c_str(),
+        FILE_APPEND_DATA,         
+        FILE_SHARE_READ,          
+        NULL,
+        OPEN_ALWAYS,              
+        FILE_ATTRIBUTE_NORMAL,
+        NULL
+    );
+
+    if (hFile != INVALID_HANDLE_VALUE) {
+        DWORD bytesEscritos = 0;
+        BOOL bWrite = WriteFile(
+            hFile,
+            linhaLog.c_str(),
+            (DWORD)linhaLog.length(),
+            &bytesEscritos,
+            NULL
+        );
+
+        CloseHandle(hFile);
+        if (bWrite) {
+            sucesso = true;
+        }
+    }
+
+    // 2. LIBERAÇÃO OBRIGATÓRIA DO MUTEX
+    if (hMutex != NULL) {
+        ReleaseMutex(hMutex);
+        CloseHandle(hMutex);
+    }
+
+    if (!sucesso) {
+        std::cerr << "Erro: Nao foi possivel escrever no arquivo de log: " << caminhoLog << std::endl;
         return 1;
     }
 
     return 0;
 }
-
