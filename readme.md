@@ -1,25 +1,64 @@
-# LOGCMTRACECLI
+# LogCMTraceCLI
 
-Os logs da Microsoft usam um padrão específico para serem lidos pelo aplicativo **CMTrace** (ou alternativas como o **CMTraceOpen**). Este aplicativo de linha de comando foi desenvolvido para gerar esses tipos de logs diretamente via CLI, permitindo seu uso integrado em scripts (como arquivos `.bat` ou `.ps1`).
+Uma ferramenta de linha de comando leve desenvolvida em C/C++ para gerar arquivos de log no formato padrão da Microsoft (compatível com CMTrace e CMTraceOpen). Ideal para ser integrada em scripts de automação (como arquivos .bat, .cmd ou .ps1).
+
+---
+
+## Como Usar
+
+A sintaxe básica para execução do executável é:
+
+```cmd
+logCMTraceCLI.exe "Sua mensagem de log" "Caminho\Do\Arquivo.log" [Tipo] [Componente]
+```
+
+### Descrição dos Argumentos
+
+| Argumento | Descrição | Obrigatório? |
+| :--- | :--- | :--- |
+| **1º** | A mensagem que será registrada no log. | **Sim** |
+| **2º** | O caminho completo ou relativo do arquivo de log. | **Sim** |
+| **3º** | O **Tipo** de severidade do log (1, 2 ou 3). | Não (Padrão: 1) |
+| **4º** | O **Componente** (módulo ou script de origem). | Não (Padrão: CLI) |
+
+---
+
+## Tipos de Log e Severidade
+
+O visualizador CMTrace utiliza o código de tipo para colorir as linhas automaticamente, facilitando o diagnóstico:
+
+*   **1 — Informação (Normal)**
+    *   *Visual:* Fundo branco.
+    *   *Uso:* Eventos rotineiros ou transações bem-sucedidas (ex: "Conexão estabelecida").
+*   **2 — Aviso (Warning)**
+    *   *Visual:* Destacado com fundo amarelo.
+    *   *Uso:* Situações atípicas que requerem atenção, mas não pararam a execução (ex: "Espaço em disco baixo").
+*   **3 — Erro (Error)**
+    *   *Visual:* Destacado com fundo vermelho.
+    *   *Uso:* Falhas críticas ou interrupções de fluxo (ex: "Arquivo de configuração não encontrado").
+
+---
 
 ## Compilando e Testando
 
-O programa foi gerado com auxílio de inteligência artificial e foi estruturado/compilado usando o **Dev-C++** para obter o máximo de compatibilidade com o Windows.
+O programa foi estruturado para obter máxima compatibilidade com o Windows utilizando o **Dev-C++**.
 
-Para compilar o projeto:
 1. Abra o projeto no **Dev-C++**.
-2. Compile o programa.
-3. Execute o arquivo `testar.bat`.
+2. Compile o código-fonte gerando o executável.
+3. Execute o arquivo `testar.bat` incluído no repositório.
 
-Ao final, é esperado que o arquivo `teste_completo.log` seja gerado na raiz do projeto, pronto para ser aberto pelo visualizador de logs.
+Ao final, o arquivo `teste_completo.log` será gerado na raiz do projeto, pronto para inspeção.
+
+---
 
 ## Sobre o CMTrace
 
-Atualmente, o CMTrace tradicional da Microsoft não é mais oferecido de forma standalone oficial, mas para testes e ambientes modernos é possível utilizar o **CMTraceOpen**:
+Atualmente, o CMTrace clássico da Microsoft não é mais distribuído oficialmente de forma standalone. Para visualizar os logs gerados em ambientes modernos, utilize o **CMTraceOpen**:
 
-* Repositório oficial: [https://github.com/adamgell/cmtraceopen](https://github.com/adamgell/cmtraceopen)
+*   Repositório Oficial: [https://github.com/adamgell/cmtraceopen](https://github.com/adamgell/cmtraceopen)
 
-   
+---
+
 ## Observações
 
- Aplicativo foi gerado pelo Google Gemini
+*   Projeto desenvolvido com o auxílio de Inteligência Artificial (Google Gemini).
